@@ -1,0 +1,132 @@
+Public Class Form1
+    Const r = 100 'CHANGE THIS IF YOU CHANGE THE SIZE OF THE CIRCLE
+
+    'Const P3x As Integer = 100 'circle.Width '100
+    'Const P3y As Integer = 100
+    Dim P1x, P1y, P2x, P2y, P3x, P3y As Double
+    'Dim dots(100) As Integer = {}
+    Dim dots(100) As PictureBox
+    Dim a, o As Double
+    Dim degrees As Integer = 0 'it starts at 0 degrees
+    Dim theta As Double
+
+    Private Sub SetLines()
+        'This sub connects the ends of the lines to the pre-determined points. It forms a triangle.
+        line1.X2 = P3x
+        line3.X2 = P3x
+
+        line1.X1 = P1x
+        line2.X1 = P1x
+
+        line3.X1 = P2x
+        line2.X2 = P2x
+
+        line1.Y1 = P1y
+        line2.Y1 = P1y
+
+        line3.Y1 = P2y
+        line2.Y2 = P2y
+
+        line1.Y2 = P3y
+        line3.Y2 = P3y
+    End Sub
+
+    Private Sub NewPoints()
+        Call SetMiddlePoint()
+        'P3x = P1x - a '//NEW STATEMENT
+        P1x = P3x + a 'value of a is determined using sin //ORIGINAL STATEMENT
+        P1y = P3y
+        P2x = P1x
+        P2y = P1y - o
+
+        'Guess I didn't need this.......
+        'P2y = P3y + Math.Sqrt((r ^ 2) - (P3x - P2x) ^ 2)
+        'P2x = P3x - Math.Sqrt((r ^ 2) - (P2y - P3y) ^ 2)
+        'P1y = P3y 'ensures that line1 is a straight horizontal line
+        'P1x = P2x 'ensures that line2 is a straight vertical line
+        'P1x = P3x - r
+        ''P2y = P1y + (P2y - P3y) 'P2y = P1y - 50 gives a right side up triangle
+    End Sub
+
+    Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        Timer1.Start()
+    End Sub
+
+    Private Sub Timer1_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Timer1.Tick
+        dot.Left = P2x
+        dot.Top = P2y
+        Call DetermineAngles()
+        Call NewPoints()
+        Call SetLines()
+        Call MoveCircle()
+        Call UpdateAngles()
+    End Sub
+
+    Private Sub DetermineAngles()
+        'theta = ArcCos(a / r)
+        a = r * Math.Cos(theta)
+        o = r * Math.Sin(theta)
+    End Sub
+
+    Private Sub SetMiddlePoint()
+        'THESE VARIABLES SHOULD BE CONSTANTS and declared globally
+        '^^UPDATE: this should NOT be declared globally because the circle will be moving
+        'This sub ensures that the triangle moves with the circle and that P3 stays in the middle of t
+        P3x = circle.Left + (circle.Width / 2)
+        P3y = circle.Top + (circle.Width / 2)
+        'P3x = P1x - a
+    End Sub
+
+    Private Sub UpdateAngles()
+        If degrees = 360 Then
+            degrees = 0
+        End If
+        theta = Math.PI * degrees / 180.0
+        degrees += 1
+    End Sub
+
+    Private Sub MoveCircle()
+        'Dim current As Double
+        Dim xdir As Double = 1
+
+        'xdir = (r * Math.Cos(theta)) - (r * Math.Cos(theta - 1))
+
+        circle.Left += xdir
+        'circle.Left = P3x - r
+
+        'If circle.Right > Me.Width Then
+        '    xdir = -1
+        'ElseIf circle.Left < 0 Then
+        '    xdir = 1
+        'End If
+    End Sub
+
+    Private Sub CreateDot()
+        Dim dots(100) As PictureBox
+        Dim x As Integer = 0
+        Dim blob As String
+
+        blob = "dot" & x.ToString
+
+        dots(x).Name = blob
+        dots(x).BackColor = Color.Black
+        dots(x).Visible = True
+        dots(x).Top = 20 + x
+        dots(x).Width = 100
+        dots(x).Height = 50
+        dots(x).Left = 10 + x
+        'add control to form
+        Controls.Add(dots(x))
+        x += 1
+    End Sub
+
+    'Private Sub Form1_Paint(ByVal sender As Object, ByVal e As System.Windows.Forms.PaintEventArgs) Handles MyBase.Paint
+    '    e.Graphics.FillRectangle(Brushes.Red, New Rectangle(P2x, P2y, 4, 4))
+    'End Sub
+
+    ' Inverse Cosine
+    Function ArcCos(ByVal X As Double) As Double
+        Dim val As Double = Math.Atan(-X / Math.Sqrt(-X * X + 1)) + 2 * Math.Atan(1)
+        Return val
+    End Function
+End Class

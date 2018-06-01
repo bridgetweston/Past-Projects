@@ -1,0 +1,211 @@
+Public Class Form1
+    Dim ballXSpeed, ballYSpeed As Integer
+    Dim usrMovgL, usrMovgR As Boolean
+    Dim userBoxSpeed As Integer = 10
+    Const ballSpeed As Integer = 8
+    Dim ballFloating As Boolean = False
+    Dim allTgts = New PictureBox() {easyTgt0, easyTgt1, easyTgt2, easyTgt3, easyTgt4, medTgt0, medTgt1, medTgt2, medTgt3, medTgt4, hardTgt0, hardTgt1, hardTgt2, hardTgt3, hardTgt4}
+    Const tgtGap As Integer = 20
+    Const tgtHeight As Integer = 50
+    Dim numTgtsInRow As Integer = 5
+    Dim newLoc As Integer = 0
+
+    Private Sub Form1_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
+        GameTimer.Start()
+        userBox.Left = Me.Width / 2 - userBox.Width / 2 'starting location for user box
+    End Sub
+
+    Private Sub Form1_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles Me.KeyDown
+        'Move userBox when user presses arrow keys:
+        If e.KeyCode = 188 Then 'left 'arrow' pressed
+            usrMovgR = False
+            usrMovgL = True 'set flag
+        ElseIf e.KeyCode = 190 Then 'right 'arrow' pressed
+            usrMovgL = False
+            usrMovgR = True
+        End If
+    End Sub
+
+    Private Sub Form1_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles Me.KeyPress
+        If e.KeyChar = Convert.ToChar(32) Then 'spacebar is pressed
+            If ballFloating = False Then
+                If ((userBox.Left <= Me.Width - userBox.Width / 2) And (userBox.Left >= 0)) Then 'userbox is in bounds
+                    'set starting direction:
+                    If userBox.Left > (Me.Width / 2 - userBox.Width / 2) Then 'on right side of form
+                        ballXSpeed = ballSpeed
+                        ballYSpeed = -ballSpeed
+                    Else 'on left side of form
+                        ballXSpeed = -ballSpeed
+                        ballYSpeed = -ballSpeed
+                    End If
+                    ballFloating = True  'start moving ball
+                End If
+            End If
+        End If
+    End Sub
+
+    Private Sub Form1_KeyUp(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles Me.KeyUp
+        Select Case e.KeyCode
+            Case 188 'left arrow key released => '<'
+                usrMovgL = False 'stop moving userbox left
+            Case 190 'right arrow key released => '>'
+                usrMovgR = False 'stop moving userbox right
+        End Select
+    End Sub
+
+
+    Private Sub MoveBall()
+        If ballFloating = False Then 'ball rests on userBox, in middle
+            ball.Left = userBox.Left + (userBox.Width / 2) - (ball.Width / 2)
+            ball.Top = userBox.Top - ball.Height - 1
+        Else 'ball is floating
+            'move ball:
+            ball.Top += ballYSpeed
+            ball.Left += ballXSpeed
+
+            'checking for collisions:
+            CheckBallCollisionWalls()
+            CheckBallCollisionTgts()
+
+        End If
+    End Sub
+
+    Private Sub MoveUserBox()
+
+        'Move box across x-axis:
+        If usrMovgL Then
+            userBox.Left -= userBoxSpeed 'move left 10 units
+        End If
+        If usrMovgR Then
+            userBox.Left += userBoxSpeed
+        End If
+
+
+        'Check boundaries:
+        If (userBox.Left + userBox.Width / 2) < 0 And usrMovgL Then 'halfway through left wall
+            userBox.Left = Me.Width - userBox.Width / 2 'wrap around screen
+        End If
+        If (userBox.Left >= Me.Width - 18 - userBox.Width / 2) And usrMovgR Then 'halfway through right wall
+            userBox.Left = 0 - userBox.Width / 2 'wrap around screen
+        End If
+    End Sub
+
+    Private Sub GameTimer_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles GameTimer.Tick
+        MoveUserBox()
+        MoveBall()
+    End Sub
+
+    Private Function RevBallSpeed(ByVal n As Integer)
+        'this function returns opposite of number (eg convert 1 to -1)
+        If n = ballSpeed Then
+            Return -ballSpeed
+        ElseIf n = -ballSpeed Then
+            Return ballSpeed
+        End If
+        Return 0
+    End Function
+
+    Private Sub CheckBallCollisionWalls()
+        'check for collision with userBox:
+        If ball.Bottom >= userBox.Top And ball.Bounds.IntersectsWith(userBox.Bounds) Then 'ball hits userBox
+            ball.Top = userBox.Top - ball.Height 'for smoother graphics
+            ballYSpeed = RevBallSpeed(ballYSpeed) 'change direction
+        End If
+
+        'check for collision with walls:
+        If ball.Top <= 0 Then 'Or IsTouchingTarget(ball) Then 'ball hit top
+            'switches values of BallYDir to move in diff dir:
+            ball.Top = 0 'for smoother graphics
+            ballYSpeed = RevBallSpeed(ballYSpeed) 'change direction
+        End If
+        If ball.Top >= Me.Height - 54 Then 'ball hit bottom
+            ball.Top = Me.Height - 54 'for smoother graphics
+            'LOSE A LIFE!!! ADD LATER
+            ballFloating = False 'return to reg. position on top of userBox
+        End If
+        If (ball.Left <= 0) Then 'ball hit left wall
+            ball.Left = 0 'for smoother graphics
+            'switches values of BallXDir to move in diff dir:
+            ballXSpeed = RevBallSpeed(ballXSpeed)
+        End If
+        If (ball.Left >= Me.Width - 18 - ball.Width) Then 'ball hit right wall
+            ball.Left = Me.Width - 18 - ball.Width 'for smoother graphics
+            'switches values of BallXDir to move in diff dir:
+            ballXSpeed = RevBallSpeed(ballXSpeed)
+        End If
+    End Sub
+
+    Private Sub CheckBallCollisionTgts()
+        Dim allTgts = New PictureBox() {easyTgt0, easyTgt1, easyTgt2, easyTgt3, easyTgt4, medTgt0, medTgt1, medTgt2, medTgt3, medTgt4, hardTgt0, hardTgt1, hardTgt2, hardTgt3, hardTgt4}
+        For i = 0 To allTgts.Length - 1
+            If ball.Bounds.IntersectsWith(allTgts(i).Bounds) Then
+                'change direction of ball based on FindAxisHit()
+                If FindAxisHit(allTgts(i)) = "X" Then 'has hit x-axis
+                    ballYSpeed = RevBallSpeed(ballYSpeed)
+                Else 'has hit y-axis
+                    ballXSpeed = RevBallSpeed(ballXSpeed)
+                End If
+                Call ChngTgt(allTgts(i))
+            End If
+
+        Next
+    End Sub
+
+    Private Sub ChngTgt(ByVal tgt As PictureBox)
+        Select Case tgt.BackColor
+            Case Color.Chartreuse 'hit easy tgt/tgt w one hit left
+                tgt.Left = -1000
+            Case Color.Yellow 'hit med tgt/tgt with 2 hits left
+                tgt.BackColor = Color.Chartreuse
+            Case Color.Red 'hit hard tgt
+                tgt.BackColor = Color.Yellow
+        End Select
+    End Sub
+
+    Private Function FindAxisHit(ByVal tgtHit As PictureBox)
+        If ball.Top < tgtHit.Bottom And ball.Bottom > tgtHit.Bottom And ball.Top > tgtHit.Top And ball.Left > tgtHit.Left Then
+            ball.Top = tgtHit.Bottom 'for smoother graphics
+            Return ("X") 'ball has hit bottom of tgtHit
+        ElseIf ball.Right > tgtHit.Left And ball.Left < tgtHit.Left And ball.Top > tgtHit.Top And ball.Top < tgtHit.Bottom Then
+            ball.Left = tgtHit.Left - ball.Width 'for smoother graphics
+            Return ("Y") 'ball has hit left side of tgtHit
+        ElseIf ball.Left < tgtHit.Right And ball.Right > tgtHit.Right And ball.Top > tgtHit.Top And ball.Bottom < tgtHit.Bottom Then
+            ball.Left = tgtHit.Right 'for smoother graphics
+            Return ("Y") 'ball hit right side of tgtHit
+        ElseIf ball.Bottom > tgtHit.Top And ball.Top < tgtHit.Top And ball.Left > tgtHit.Left And ball.Left < tgtHit.Right Then
+            ball.Top = tgtHit.Top - ball.Height
+            Return ("X") 'hit top of tgtHit
+        End If
+        Return ("X") 'default
+    End Function
+
+    Private Sub SetTgts()
+        'THIS SUB DOESN"T WORK!!!!!!!!!!!!!!!!!!
+        Dim allTgts = New PictureBox() {easyTgt0, easyTgt1, easyTgt2, easyTgt3, easyTgt4, medTgt0, medTgt1, medTgt2, medTgt3, medTgt4, hardTgt0, hardTgt1, hardTgt2, hardTgt3, hardTgt4}
+        'this sub sets initial location of all targets in the game
+        For i = 0 To allTgts.Length - 1
+            'set size
+            allTgts(i).Width = (Me.Width - 20 - (tgtGap * (numTgtsInRow + 1))) / numTgtsInRow
+
+            'set location
+            Select Case allTgts(0).Name.Substring(0, 1)
+                Case "e"
+                    allTgts(i).Top = 150
+                Case "m"
+                    allTgts(i).Top = 80
+                Case "h"
+                    allTgts(i).Top = 15
+            End Select
+
+            If i > 0 Then
+                If allTgts(i).Name.Substring(0, 1) <> allTgts(i - 1).Name.Substring(0, 1) Then
+                    newLoc = 0
+                End If
+            End If
+
+            newLoc += tgtGap
+            allTgts(i).Left = newLoc
+            newLoc += allTgts(i).Width
+        Next
+    End Sub
+End Class

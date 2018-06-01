@@ -1,0 +1,65 @@
+Public Class Form1
+    Dim keyW = New Button() {btnC, btnD, btnE, btnF, btnG, btnA, btnB, btnCH}
+    Dim keyB = New Button() {btnCD, btnDE, btnFG, btnGA, btnAB}
+    Dim psc As Double
+
+    Private Sub SetKeys()
+        Dim keyW = New Button() {btnC, btnD, btnE, btnF, btnG, btnA, btnB, btnCH}
+
+        'sets positionwhite keys
+        psc = (pbxPiano.Width - (keyW(0).Width * 8)) / 9 'space in between keys
+        For i = 0 To keyW.length - 1
+            keyW(i).Left = (((Me.Width - 15) - pbxPiano.Width) / 2) + psc * (i + 1) + (keyW(0).Width * i)
+        Next
+
+        'sets position of black (accidental) keys
+        btnCD.Left = btnC.Left + (((2 * (btnC.Width) + psc) - btnDE.Width) / 2) 'C#
+        btnDE.Left = btnD.Left + (((2 * (btnC.Width) + psc) - btnDE.Width) / 2) 'C#
+    End Sub
+
+    Private Sub Form1_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles Me.KeyPress
+        Select Case e.KeyChar
+            Case ChrW(99) 'c
+            Case ChrW(100) 'd
+            Case ChrW(101) 'e
+            Case ChrW(102) 'f
+            Case ChrW(103) 'g
+            Case ChrW(97) 'a
+            Case ChrW(98) 'b
+            Case ChrW(104) 'high c, key is h
+        End Select
+    End Sub
+
+
+
+    Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        SetKeys()
+
+    End Sub
+
+
+    Private Sub Button_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnC.Click, btnD.Click, btnE.Click, btnF.Click, btnG.Click, btnA.Click, btnB.Click, btnCH.Click
+        Select Case DirectCast(sender, Button).Name
+            Case "btnC"
+                Beep(261.6, 700)
+            Case "btnD"
+                Beep(293.7, 700)
+            Case "btnE"
+                Beep(329.6, 700)
+            Case "btnF"
+                Beep(349.2, 700)
+            Case "btnG"
+                Beep(392, 700)
+            Case "btnA"
+                Beep(440, 700)
+            Case "btnB"
+                Beep(493.9, 700)
+            Case "btnCH"
+                Beep(523.3, 700)
+        End Select
+    End Sub
+
+    Private Sub Beep(ByVal freq, ByVal duration)
+        System.Console.Beep(freq, duration)
+    End Sub
+End Class

@@ -1,0 +1,372 @@
+Public Class Form1
+    Dim floating As Boolean = False
+    Dim speed As Double
+    Dim goingUp As Boolean = False
+    Dim goingDown As Boolean = False
+    Dim moveL, moveR As Boolean
+    Dim floor = New PictureBox() {floor0, floor1, floor2, floor3, floor4}
+    Dim answer = New Label() {ans0, ans1, ans2, ans3, lblStart} 'lblStart becomes answer label
+    Dim xdir As Integer = 1
+    Dim count As Integer = 200
+    Dim ans As Integer
+    Dim newInt As Integer
+    Dim level As Integer = 1 'devault level is 1: Easy; Easy(5*5), Medium(10*10), Hard(15*15)
+    'To Do:
+    ' - add sound effects when user gets the answer right/wrong
+    ' - centre question (put in middle of floors) - CORRECTED
+    ' - line 256 - sometimes Rand() picks 4 because of rounding. This is out of array bounds! - CORRECTED
+    ' - sometimes two answer labels touch/overlap - CORRECTED
+
+    Private Sub Form1_KeyUp(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles Me.KeyUp
+        If e.KeyCode = Keys.Right Then
+            moveR = False
+        End If
+        If e.KeyCode = Keys.Left Then
+            moveL = False
+        End If
+    End Sub
+
+    Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        gameTimer.Start()
+    End Sub
+
+    Private Sub Form1_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles Me.KeyDown
+        If e.KeyCode = Keys.Left Then
+            moveL = True
+            'box.Left -= 7 'moves the box left
+        Else
+            moveL = False
+        End If
+        If e.KeyCode = Keys.Right Then
+            moveR = True
+            'box.Left += 7 'moves the box left
+        Else
+            moveR = False
+        End If
+    End Sub
+
+    Private Sub Form1_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles Me.KeyPress
+        Select Case e.KeyChar
+            Case ChrW(32) 'the spacebar is pressed
+                speed = 10 'sets starting speed
+                'changes states:
+                goingUp = True
+                floating = True
+        End Select
+    End Sub
+
+    Private Sub RunGame(ByVal sender As Object, ByVal e As System.EventArgs) Handles gameTimer.Tick
+        Dim answer = New Label() {ans0, ans1, ans2, ans3, lblStart}
+        Dim first As Integer = 0 'false
+        'StartGame()
+        Randomize()
+        MoveBlock()
+        CheckCollision()
+        MoveBox()
+
+            If count > 50 Then
+                lblResult.Visible = False
+            End If
+            If (count > 100) Then 'delay for 1000 milliseconds/1 second; interval of timer1 is 10 ms
+
+            For i = 0 To answer.Length - 1
+                If box.Bounds.IntersectsWith(answer(i).Bounds) Then
+                    'DisplayMath(Rand(1, 10), Rand(1, 10), i)
+                    DisplayMath(Rand(1, level * 5), Rand(1, level * 5), i) 'sometimes the Rand() function returns a value one greater than the range specified!!!
+                    count = 0
+                End If
+            Next
+            Else
+                count += 1
+            End If
+    End Sub
+
+    Private Sub GoUp()
+        'This sub makes the box go downward
+        'changes states:
+        floating = True
+        goingDown = False
+        box.Top -= speed 'moves the box up at rate speed (speed is not const)
+        speed = speed * 0.9 'decreases speed by factor of 9/10
+
+        If speed < 0.9 Then
+            'the box has reached max height
+            'changes states:
+            goingUp = False
+            goingDown = True
+        End If
+
+    End Sub
+
+    Private Sub GoDown()
+        'This sub makes the box go downward
+        'changes states:
+        floating = True
+        goingUp = False
+        box.Top += speed
+
+        If speed > 9 Then
+            speed = speed
+        Else
+            speed = speed * 1.1
+        End If
+
+        CheckCollision() 'checks if the box has hit the floor
+    End Sub
+
+    Private Sub CheckCollision()
+        Dim floor = New PictureBox() {floor0, floor1, floor2, floor3, floor4}
+
+        For i = 0 To floor.Length - 1
+            'If (box.Bottom > floor(i).Top) And (box.Right > floor(i).Left) And (goingDown Or floating) And (box.Left < floor(i).Right) Then 'box.Bottom = floor0.Top Or box.Bottom > floor0.Top Then
+            If OnFloor(floor(i), box) = True Then
+                floating = False
+                goingDown = False
+                'box is below the top of the floor, but not floating
+                If box.Bottom > floor(i).Top Then
+                    box.Top = (floor(i).Top - box.Height)
+                End If
+                'box is above the top of the floor, but not floating
+                If box.Bottom < floor(i).Top Then
+                    box.Top = (floor(i).Top - box.Height)
+                End If
+            Else
+                goingDown = True
+                floating = True
+            End If
+        Next
+
+        'COLLISION WITH WALLS
+        If box.Left < 1 Then 'box has gone too far left
+            moveL = False 'see MoveBox(), stops moving the box
+        End If
+        If box.Right > (Me.Width - 5) Then
+            moveR = False
+        End If
+
+
+        'OLD CODE BLOCK:
+        'Private Sub CheckCollision()
+        '    Dim floor = New PictureBox() {floor0, floor1, floor2}
+
+        '    'COLLISION WITH FLOOR
+        '    If goingDown And box.Bottom > 270 Then 'the box has reached the ground // CHANGE THIS, THE BOTTOM OF FORM1 SHOULD BE A PICBOX FLOOR
+        '        floating = False
+        '        speed = 0
+        '        goingDown = False
+        '    End If
+        '    For i = 0 To floor.Length - 1
+        '        If (box.Bottom > floor(i).Top) And (box.Right > floor(i).Left) And (goingDown Or floating) And (box.Left < floor(i).Right) Then 'box.Bottom = floor0.Top Or box.Bottom > floor0.Top Then
+        '            floating = False
+        '            goingDown = False
+        '            'box is below the top of the floor, but not floating
+        '            If box.Bottom > floor(i).Top Then
+        '                box.Top = (floor(i).Top - box.Height)
+        '            End If
+        '            'box is above the top of the floor, but not floating
+        '            If box.Bottom < floor(i).Top Then
+        '                box.Top = (floor(i).Top - box.Height)
+        '            End If
+        '        End If
+        '    Next
+
+        '    'COLLISION WITH WALLS
+        '    If box.Left < 1 Then 'box has gone too far left
+        '        moveL = False
+        '    End If
+        '    If box.Right > (Me.Width - 5) Then
+        '        moveR = False
+        '    End If
+        'End Sub
+    End Sub
+
+    Private Function OnFloor(ByVal floor As PictureBox, ByVal box As PictureBox)
+        'determines if the box is on a floor or not
+        If ((box.Bottom > floor.Top And box.Bottom < floor.Bottom) Or box.Bottom = floor.Top) And (box.Right > floor.Left) And (goingDown Or floating) And (box.Left < floor.Right) Then
+            Return True
+        Else
+            Return False
+        End If
+    End Function
+
+    Private Sub MoveBox()
+        'This is the sub that combines all the other subs!!!
+        'move along x-axis
+        If moveR = True Then
+            box.Left += 7 'moves the box left
+        End If
+        If moveL = True Then
+            box.Left -= 7 'moves the box left
+        End If
+
+        'move along y-axis
+        If goingUp = True Then
+            GoUp() 'make the box move up
+        End If
+        If goingDown = True Then
+            GoDown() 'make the box move back down
+        End If
+
+
+        'Adjusting position of block when it hits a wall; the box cannot go past the walls
+        If box.Left < 0 Then 'box is on the left side
+            box.Left = 0
+        End If
+        If box.Right > Me.Width - 10 Then 'box is on the right side
+            box.Left = Me.Width - box.Width - 15
+        End If
+    End Sub
+
+    Private Sub MoveBlock()
+        If block4.Bottom = floor4.Top Then 'the block is on one of the floors; it is not floating, however, this doesn't change anyway
+            'moves the block across the floor (it is on floor 4)
+            If block4.Right > floor4.Right Then
+                xdir = -1
+            End If
+            If block4.Left < 0 Then
+                xdir = 1
+            End If
+        End If
+
+        block4.Left += xdir 'moves the block
+
+        If box.Bounds.IntersectsWith(block4.Bounds) And (goingDown = False) Then
+            gameTimer.Stop()
+            MsgBox("You Lose! (score: " & lblScoreVal.Text & ")")
+            Me.Close()
+        End If
+
+        If box.Bounds.IntersectsWith(block4.Bounds) And (goingDown = True) Then 'box hits the block from the top (eg jumping and coming back down)
+            block4.Left = 0 - block4.Width 'moves location of block so that it is no longer in the game
+            block4.Top = 0 - block4.Height
+        End If
+
+    End Sub
+
+    Private Function Rand(ByVal Lownum As Integer, ByVal HighNum As Integer)
+        'This function returns a random value in a given range
+        Dim num As Integer = (HighNum - Lownum + 1) * Rnd() + Lownum
+        Return num 'returns the random value
+    End Function
+
+    Private Sub DisplayMath(ByVal num1 As Integer, ByVal num2 As Integer, ByVal ans_num As Integer)
+        'This sub displays a multiplication question and four answers in different labels
+        'the third parameter is to deliver the answer label number, so that this sub can know which answer was selected
+        Dim answer = New Label() {ans0, ans1, ans2, ans3, lblStart}
+        Randomize() 'to ensure that to program does not use the values from the last time it was run
+
+        'This block is run before the new question/answer is produced (using previous value of 'ans')
+        If answer(ans_num).Text = ans.ToString And (answer(ans_num).Text <> "START") Then 'the user got the answer right (they hit the label that contained the correct answer)
+            lblResult.Text = "Correct!" 'displays message to user - they picked the correct answer
+            PlayCorrectSound() 'plays sound effect that represents hitting the correct answer
+            lblScoreVal.Text = Val(lblScoreVal.Text) + 1 'increases score by 1 point
+        Else
+            If (answer(ans_num).Text <> "START") Then
+                lblResult.Text = "Incorrect!" 'displays message to user - they picked the wrong answer
+                PlayIncorrectSound() 'plays sound effect that represents hitting the incorrect answer
+                lblScoreVal.Text = Val(lblScoreVal.Text) - 1 'decreases score by 1 point
+            End If
+        End If
+        lblResult.Visible = True 'label that displays correct or incorrect
+
+        ans = num1 * num2 'stores value of the answer to the NEW multiplication problem
+
+        'places one correct number and 3 incorrect in the 4 answer{} labels
+        answer(2).Text = ans.ToString
+        For i = 0 To answer.Length - 1
+            If answer(i).Text <> ans.ToString Then 'the label does not contain the answer (only one of them already does)
+                    answer(i).Text = Rand((ans - 5), (ans + 5)) 'picks a random number in a range based on the actual answer
+            End If
+        Next
+        lblQuestion.Text = num1 & " X " & num2 'displays question
+        ChangeAnsLocation() 'changes location of answer{} labels for each new question
+        CentreQuestion() 'puts the question label in the exact middle of the form based on its new size
+    End Sub
+
+    Private Sub ChangeAnsLocation()
+        Dim answer = New Label() {ans0, ans1, ans2, ans3, lblStart}
+        Dim hit As Boolean = True
+        'This sub changes the location of the answer labels. It also changes the size of the font of each label.
+
+        'range of y-values: 0 to (floor4.Top + box.height) (floor4 is the highest floor)
+        'range of x-values: 0 to Me.Width (approx)
+
+        Do Until hit = False
+            For a = 0 To answer.Length - 1
+                answer(a).Font = New Font("Comic Sans MS", Rand(15, 40)) 'picks a new random font size, range 15pt - 40pt
+                answer(a).Left = Rand(30, (Me.Width - 200)) 'picks a random x-value out of the range ^^
+                answer(a).Top = Rand(lblResult.Height, (floor4.Top - answer(a).Height)) 'picks a random y-value out of the range ^^
+                answer(a).Visible = True 'they are only not visible at LoadForm
+                Randomize()
+            Next
+            lblQuestion.Visible = True
+            hit = CheckTouching()
+        Loop
+        Randomize()
+    End Sub
+
+    Private Sub CentreQuestion()
+        'puts lblQuestion in the exact centre of the form
+        lblQuestion.Left = ((Me.Width - 16) / 2) - (lblQuestion.Width / 2)
+    End Sub
+
+    Private Function CheckTouching()
+        Dim answer = New Label() {ans0, ans1, ans2, ans3, lblStart}
+        'This function determines whether two answer{} labels are touching and returns this value (true or false)
+        Dim hit As Boolean = False
+        For h = 0 To answer.Length - 1
+            For k = 0 To answer.Length - 1
+                If (h <> k) And answer(h).Bounds.IntersectsWith(answer(k).Bounds) Then 'two answer labels are touching
+                    hit = True 'if this condition ^ does not evaluate to true, it remains false
+                End If
+            Next
+        Next
+
+        Return hit 'returns boolean value, whether two labels are touching or not
+    End Function
+
+    Private Function StartGame()
+        Dim hit As Boolean = False
+            If box.Bounds.IntersectsWith(lblStart.Bounds) Then 'the user hit the start label
+                lblResult.Visible = False 'sets start state for label that shows whether the user got the answer correct or not
+                lblStart.Left = 0 - lblStart.Width 'moves the label out of view
+                lblStart.Top = 0 - lblStart.Height 'moves the label out of view
+                hit = True
+            End If
+        Return hit
+    End Function
+
+    Private Sub Delay(ByVal time As Integer)
+        Dim a As Integer = 0
+        If a <= time Then
+            a += 1
+        End If
+    End Sub 'NOT USED IN PROGRAM
+
+    Sub PlayIncorrectSound()
+        My.Computer.Audio.Play(My.Resources.incorrect_effect, AudioPlayMode.Background)
+    End Sub
+
+    Sub PlayCorrectSound()
+        My.Computer.Audio.Play(My.Resources.correct_effect,
+            AudioPlayMode.Background)
+    End Sub
+
+    Private Sub AboutToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles AboutToolStripMenuItem.Click
+        MsgBox("Game created by Bridget. 03/01/2017")
+    End Sub
+
+    Private Sub EasyToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles EasyToolStripMenuItem.Click
+        level = 1
+    End Sub
+    Private Sub MediumToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MediumToolStripMenuItem.Click
+        level = 2
+    End Sub
+    Private Sub HardToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles HardToolStripMenuItem.Click
+        level = 3
+    End Sub
+
+    Private Sub InstructionsToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles InstructionsToolStripMenuItem.Click
+        MsgBox("How to play: This game tests your multiplication skills. You control the red sprite (arrow keys to move, spacebar to jump). You must jump and hit the answer to the multiplication question displayed at the bottom. One point is added to your score for answering correctly, one is taken away for answering incorrectly. A new question is generated when you answer the last one.")
+    End Sub
+End Class

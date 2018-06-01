@@ -1,0 +1,120 @@
+Public Class Form1
+    Dim ydir As Integer = -5
+    Dim xdir As Integer = -5
+
+    Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        Timer1.Start()
+        Form2.Timer1.Start()
+        'Ball.Top = 50
+        'Ball.Left = 50
+    End Sub
+
+    Private Sub Timer1_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles Timer1.Tick
+        Dim objects = New PictureBox() {ic0, ic1, ic2, Ball}
+
+        Call MoveBall()
+
+        For i = 0 To objects.Length - 1
+            If Bob.Bounds.IntersectsWith(objects(i).Bounds) Then
+
+                Select Case i
+                    Case 3
+                        Timer1.Stop()
+                        Bob.Visible = False
+                        Form2.Show()
+                    Case 0 To 2
+                        objects(i).Visible = False
+                End Select
+            End If
+        Next i
+
+    End Sub
+
+    Private Sub Form1_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles Me.KeyDown
+        Dim ydir, xdir As Integer
+        xdir = 5
+        ydir = 5
+
+        If e.KeyCode = Keys.Left Then
+            Bob.Left -= 10
+            'Bob.Left -= xdir
+        End If
+        If e.KeyCode = Keys.Right Then
+            Bob.Left += 10
+            'Bob.Left += xdir
+        End If
+        If e.KeyCode = Keys.Up Then
+            Bob.Top -= 10
+            'Bob.Top -= ydir
+        End If
+        If e.KeyCode = Keys.Down Then
+            Bob.Top += 10
+            'Bob.Top += ydir
+        End If
+    End Sub
+
+    Private Function Collision(ByVal object1 As PictureBox, ByVal object2 As PictureBox)
+        If (object1.Top > object2.Top) And (object1.Top < (object2.Top + object2.Height)) Then
+            If ((object1.Left > object2.Left) And (object1.Left < (object2.Left + object2.Width))) Or ((object2.Left < object1.Left) And ((object2.Left + object2.Width) > object1.Left)) Then
+                Return True
+            Else
+                Return False
+            End If
+        End If
+
+        If (object2.Top > object1.Top) And (object2.Top < (object1.Top + object1.Height)) Then
+            If ((object2.Left > object1.Left) And (object2.Left < (object1.Left + object1.Width))) Or ((object1.Left < object2.Left) And ((object1.Left + object1.Width) > object2.Left)) Then
+                Return True
+            Else
+                Return False
+            End If
+        End If
+
+        'To call function:
+        'Call Collision(Bob, PictureBox1)
+        'If Collision(Bob, PictureBox1) = True Then
+        'PictureBox1.Visible = False
+        'End If
+    End Function
+
+    Private Sub MoveBall()
+
+        If (Ball.Top < 0) Then
+            ydir = ydir * (-1)
+        End If
+        If ((Ball.Top + (Ball.Height * 2)) > Me.Height) Then
+            If ydir = 5 Then
+                ydir = ydir * (-1)
+            Else
+                ydir = ydir * (-1)
+            End If
+        End If
+        If (Ball.Left < 0) Then
+            xdir = xdir * (-1)
+        End If
+        If ((Ball.Left + Ball.Width + 5) > Me.Width) Then
+            If xdir = 5 Then
+                xdir = xdir * (-1)
+            End If
+        End If
+
+        Ball.Left += xdir
+        Ball.Top += ydir
+    End Sub
+
+    'Private Sub GETICECREAM_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles GETICECREAM.Click
+    'Dim n As Integer = 2
+
+    '    Dim next_ic As New PictureBox
+
+    'next_ic.Name = "next_ic" & n
+    '    next_ic.Image = ic0.Image
+    '   next_ic.Width = ic0.Width
+    '  next_ic.Height = ic0.Height
+    ' next_ic.Top = 50
+    '    next_ic.Left = 50
+    '   next_ic.Visible = True
+    '  Controls.Add(next_ic)
+
+    'End Sub
+End Class

@@ -1,0 +1,403 @@
+Public Class Form1
+    'Tic Tac Toe
+    'Bridget Weston | October 17, 2016
+    'BUGS:
+    'Delay() sub is a work in progress
+
+    Dim comp_pick As Integer
+    Dim buttons As Button() = {btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9}
+    Dim user_turn As Boolean
+    Dim playerOneTurn As Boolean
+    Dim winner As String
+    Dim mode As Integer
+
+    Private Sub Form1_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
+        Call SetLines()
+        Call ClearButtons()
+        Call DisableButtons()
+        winner = False
+    End Sub
+
+    Private Sub ComputerTurn()
+        Dim buttons As Button() = {btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9}
+        'This sub is called when it is the computer's to pick a spot. It handles the entirety of the computer's turn.
+
+        buttons(EasyAI() - 1).Text = "O" 'puts the computer's game piece in a spot
+        'buttons(HardAI() - 1).Text = "O" 'puts the computer's game piece in a spot
+
+        Call FindWinner() 'checks if anyone has won the game
+
+        user_turn = True 'the computer's turn is over; it is now the user's turn
+        lblTurn.Text = "Your turn"
+    End Sub
+    Private Sub SetLines()
+        LineShape1.BringToFront()
+        LineShape2.BringToFront()
+        LineShape3.BringToFront()
+        LineShape4.BringToFront()
+        LineShape5.BringToFront()
+        LineShape6.BringToFront()
+        LineShape7.BringToFront()
+        LineShape8.BringToFront()
+
+        LineShape1.Visible = False
+        LineShape2.Visible = False
+        LineShape3.Visible = False
+        LineShape4.Visible = False
+        LineShape5.Visible = False
+        LineShape6.Visible = False
+        LineShape7.Visible = False
+        LineShape8.Visible = False
+    End Sub
+
+    Private Sub ClearButtons()
+        'This sub clears and enables all game buttons (btn1 - btn9)
+        Dim buttons As Button() = {btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9}
+        user_turn = True 'the game always starts out with it being the user/Player1 turn
+
+        For i = 0 To buttons.Length - 1
+            buttons(i).Text = ""
+            buttons(i).Enabled = True
+        Next i
+
+        winner = False
+    End Sub
+
+    Private Sub Button_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btn1.Click, btn2.Click, btn3.Click, btn4.Click, btn5.Click, btn6.Click, btn7.Click, btn8.Click, btn9.Click
+        'This sub puts the user's game piece in the space they clicked. Handles game buttons being clicked ONLY by the user/Player1/Player2 (see note below)
+        'Note: The computer cannot physically click buttons; computer turn events are handled in Private Sub 'ComputerTurn'
+        'Note: This sub handles buttons clicked during two player mode as well
+
+        'disables that button that the user clicked
+        Select Case DirectCast(sender, Button).Name 'gets name of button that waas clicked by the user
+            Case "btn1"
+                btn1.Enabled = False
+            Case "btn2"
+                btn2.Enabled = False
+            Case "btn3"
+                btn3.Enabled = False
+            Case "btn4"
+                btn4.Enabled = False
+            Case "btn5"
+                btn5.Enabled = False
+            Case "btn6"
+                btn6.Enabled = False
+            Case "btn7"
+                btn7.Enabled = False
+            Case "btn8"
+                btn8.Enabled = False
+            Case "btn9"
+                btn9.Enabled = False
+        End Select
+
+        If chkTwoPlayer.Checked = True Then 'the game is in two-player mode
+            If playerOneTurn = True Then 'the game is in two player mode and it is Player1 turn
+                DirectCast(sender, Button).Text = "X" 'puts Player1 game piece in the spot they clicked
+                playerOneTurn = False 'Player1 turn is over
+            Else 'it is Player2 turn
+                DirectCast(sender, Button).Text = "O" 'puts Player2 game piece in the spot they clicked
+                playerOneTurn = True 'Player2 turn is over
+            End If
+
+            Call FindWinner() 'checks if the game has been won
+        Else 'the game is in one-player mode
+            'this if statement does not check if it is the user's turn or the computer's turn, because the computer cannot click buttons
+            DirectCast(sender, Button).Text = "X" 'puts the user's game piece in the spot they clicked
+
+            user_turn = False 'the user's turn is over
+            lblTurn.Text = "Computer's turn" 'displays message
+            Call FindWinner() 'checks if the game has been won
+            Call ComputerTurn() 'it is now the computer's turn; the computer will pick a box in sub 'ComputerTurn'
+        End If
+    End Sub
+
+    Private Sub btnStart_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnStart.Click
+        'When the start button is pressed, whichever game mode is currently selected becomes the definite game mode for that round
+        'Mode 1 = oneplayereasyAI, Mode 2 = oneplayerhardAI, Mode 3 = twoplayer
+        If chkOnePlayer.Checked = True Then 'the game is in one-player mode
+            mode = 1
+            Call ClearButtons() 'clears the buttons before the game starts
+            user_turn = True 'the user gets the first turn
+        ElseIf chkTwoPlayer.Checked = True Then 'the game is in two-player mode
+            Call ClearButtons() 'clears the buttons before the game starts
+            playerOneTurn = True 'Player1 gets the first turn
+        Else 'the user has pressed the start button but has not yet selected a game mode (one-player or two-player)
+            MsgBox("Choose game mode") 'displays prompt
+        End If
+    End Sub
+
+    Private Sub FindWinner()
+        Dim buttons As Button() = {btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9}
+
+        'checks if any player has 3 game pieces in a row on the board
+        For i = 0 To buttons.Length - 1
+            If i = 1 Or i = 4 Or i = 7 Then 'btn1, btn4 or btn7
+                If buttons(i - 1).Text = "X" And buttons(i).Text = "X" And buttons(i + 1).Text = "X" Then '"X" is the game piece for the user/Player1
+                    'winner = "user" 'the user/Player1 has won the game
+                    If i = 1 Then
+                        LineShape7.Visible = True
+                    ElseIf i = 4 Then
+                        LineShape6.Visible = True
+                    Else
+                        LineShape8.Visible = True
+                    End If
+                End If
+            End If
+            If i = 1 Or i = 2 Or i = 3 Then 'btn1, btn2 or btn3
+                If buttons(i - 1).Text = "X" And buttons(i + 2).Text = "X" And buttons(i + 5).Text = "X" Then
+                    'the user/Player1 has won the game
+                    winner = "comp" 'the computer/Player2 has won the game
+                    If i = 1 Then
+                        LineShape3.Visible = True
+                    ElseIf i = 2 Then
+                        LineShape4.Visible = True
+                    Else
+                        LineShape5.Visible = True
+                    End If
+                End If
+            End If
+            If btn1.Text = "X" And btn5.Text = "X" And btn9.Text = "X" Then
+                'the user/Player1 has won the game
+                LineShape1.Visible = True
+            End If
+            If btn3.Text = "X" And btn5.Text = "X" And btn7.Text = "X" Then
+                'the user/Player1 has won the game
+                LineShape2.Visible = True
+            End If
+        Next i
+
+        For i = 0 To buttons.Length - 1
+            If i = 1 Or i = 4 Or i = 7 Then 'btn1, btn4 or btn7
+                If buttons(i - 1).Text = "O" And buttons(i).Text = "O" And buttons(i + 1).Text = "O" Then '"O" is the game piece for the computer/Player2
+                    winner = "comp" 'the computer/Player2 has won the game
+                    If i = 1 Then
+                        LineShape7.Visible = True
+                    ElseIf i = 4 Then
+                        LineShape6.Visible = True
+                    Else
+                        LineShape8.Visible = True
+                    End If
+                End If
+            End If
+            If i = 1 Or i = 2 Or i = 3 Then 'btn1, btn2 or btn3
+                If buttons(i - 1).Text = "O" And buttons(i + 2).Text = "O" And buttons(i + 5).Text = "O" Then
+                    winner = "comp" 'the computer/Player2 has won the game
+                    If i = 1 Then
+                        LineShape3.Visible = True
+                    ElseIf i = 2 Then
+                        LineShape4.Visible = True
+                    Else
+                        LineShape5.Visible = True
+                    End If
+                End If
+            End If
+            If btn1.Text = "O" And btn5.Text = "O" And btn9.Text = "O" Then
+                winner = "comp" 'the computer/Player2 has won the game
+                LineShape1.Visible = True
+            End If
+            If btn3.Text = "O" And btn5.Text = "O" And btn7.Text = "O" Then
+                winner = "comp" 'the computer/Player2 has won the game
+                LineShape2.Visible = True
+            End If
+        Next i
+
+        'For i = 0 To buttons.Length - 1
+        '    If buttons(i).Text = "X" Or buttons(i).Text = "O" Then
+        '        If i = 1 Or i = 4 Or i = 7 Then 'btn1, btn4 or btn7
+        '            If (buttons(i - 1).Text = buttons(i).Text) And (buttons(i - 1).Text = buttons(i + 1).Text) Then
+        '                winner = True
+        '            End If
+        '        End If
+        '        If i = 1 Or i = 2 Or i = 3 Then 'btn1, btn2 or btn3
+        '            If (buttons(i - 1).Text = buttons(i + 2).Text) And (buttons(i - 1).Text = buttons(i + 5).Text) Then
+        '                winner = True
+        '            End If
+        '        End If
+        '        If (btn1.Text = btn5.Text) And (btn5.Text = btn9.Text) Then
+        '            winner = True
+        '        End If
+        '        If (btn3.Text = btn5.Text) And (btn5.Text = btn7.Text) Then
+        '            winner = True
+        '        End If
+        '    End If
+        'Next i
+
+        'Call ShowWinner()
+    End Sub
+
+    Private Sub btnReset_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnReset.Click
+        'If the reset button is pressed, the game is reset
+        Call ClearButtons() 'all game buttons are cleared of text
+        Call SetLines()
+    End Sub
+
+    Function Rand(ByVal LowNum As Integer, ByVal HighNum As Integer)
+        'This function generates a random number, using a range defined in the parameters.
+        Return (HighNum - LowNum + 1) * Rnd() + LowNum
+    End Function
+
+    Private Sub chkOnePlayer_Checked(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles chkOnePlayer.CheckedChanged
+        'This sub allows the user to choose one-player mode
+        Call ClearButtons()
+        If chkOnePlayer.Checked = True Then 'one-player mode has been selected
+            chkTwoPlayer.Enabled = False 'disables other game mode; does not allow user to choose both modes
+        Else
+            chkTwoPlayer.Enabled = True 'two-player mode has not been selected; both checkboxes are enabled
+        End If
+    End Sub
+
+    Private Sub chkTwoPlayer_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles chkTwoPlayer.CheckedChanged
+        'This sub allows the player to choose two-player mode
+        Call ClearButtons()
+        If chkTwoPlayer.Checked = True Then 'two-player mode has been selected
+            chkOnePlayer.Enabled = False 'disables other game mode; does not allow user to choose both modes
+        Else
+            chkOnePlayer.Enabled = True 'two-player mode has not been selected; both checkboxes are enabled
+        End If
+    End Sub
+
+    Private Sub DisableButtons()
+        'This sub disabled all game buttons (btn(1 - 9))
+        Dim buttons As Button() = {btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9}
+        For i = 0 To buttons.Length - 1
+            buttons(i).Enabled = False
+        Next i
+    End Sub
+
+    Private Sub Delay()
+        'Dim DelayTimeInMilliseconds As Integer = 1000  '1 Second
+        'Timer1.Interval = DelayTimeInMilliseconds
+        'Timer1.Enabled = True
+    End Sub
+
+    'Private Sub ShowWinner()
+    '    'the game is either in one-player or two-player mode
+    '    If chkOnePlayer.Checked = True Then  'the game is currently in two-player mode (user vs computer)
+    '        'these events only happen if someone has won the game (no else statement; nothing happens if no one has won)
+    '        If winner = "user" Then
+    '            MsgBox("You Wins") 'displays result of game
+    '            Call ClearButtons() 'clears the buttons because the game is over
+    '        ElseIf winner = "comp" Then
+    '            MsgBox("You Lose") 'displays result of game
+    '            Call ClearButtons() 'clears the buttons because the game is over
+    '        End If
+    '    Else 'the game is currently in two-player mode (Player1 vs Player2)
+    '        'these events only happen if someone has won the game (no else statement; nothing happens if no one has won)
+    '        If winner = "user" Then 'Player1 has won the game
+    '            MsgBox("Player One Wins") 'displays result of game
+    '            Call ClearButtons() 'clears the buttons because the game is over
+    '        ElseIf winner = "comp" Then
+    '            MsgBox("Player Two Wins") 'displays result of game
+    '            Call ClearButtons() 'clears the buttons because the game is over
+    '        End If
+    '    End If
+    'End Sub
+
+    Private Function HardAI() 'THIS DOESN'T WORK
+        Dim buttons As Button() = {btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9}
+        Dim turnover As Boolean = False
+        Dim turnisover As Boolean = False
+
+        comp_pick = 10
+
+
+
+        For i = 0 To buttons.Length - 1
+
+            'horizontal cases
+            If i = 0 Or i = 3 Or i = 6 Then
+                If buttons(i).Text = "X" And buttons(i + 1).Text = "X" Then
+                    comp_pick = (i + 2)
+                    'turnover = True
+                    Exit For
+                ElseIf buttons(i).Text = "X" And buttons(i + 2).Text = "X" Then
+                    comp_pick = (i + 1)
+                    Exit For ''turnover = True
+                ElseIf buttons(i + 1).Text = "X" And buttons(i + 2).Text = "X" Then
+                    comp_pick = i
+                    Exit For ''turnover = True
+                End If
+            End If
+
+            'vertical cases
+            If i = 0 Or i = 1 Or i = 2 Then
+                If buttons(i).Text = "X" And buttons(i + 3).Text = "X" Then
+                    comp_pick = (i + 6)
+                    Exit For 'turnover = True
+                ElseIf buttons(i).Text = "X" And buttons(i + 6).Text = "X" Then
+                    comp_pick = (i + 3)
+                    Exit For 'turnover = True
+                ElseIf buttons(i + 3).Text = "X" And buttons(i + 6).Text = "X" Then
+                    comp_pick = i
+                    Exit For 'turnover = True
+                End If
+            End If
+
+            'unique case 1: btn1, btn5, btn9
+            If btn1.Text = "X" And btn5.Text = "X" Then
+                comp_pick = 9
+                Exit For 'turnover = True
+            ElseIf btn1.Text = "X" And btn9.Text = "X" Then
+                comp_pick = 5
+                Exit For 'turnover = True
+            ElseIf btn5.Text = "X" And btn9.Text = "X" Then
+                comp_pick = 1
+                Exit For 'turnover = True
+            End If
+
+            'unique case 2: btn3, btn5, btn7
+            If btn3.Text = "X" And btn5.Text = "X" Then
+                comp_pick = 7
+                Exit For 'turnover = True
+            ElseIf btn3.Text = "X" And btn7.Text = "X" Then
+                comp_pick = 5
+                Exit For 'turnover = True
+            ElseIf btn5.Text = "X" And btn7.Text = "X" Then
+                comp_pick = 3
+                Exit For 'turnover = True
+            End If
+
+            'If turnover = True Then
+            'Exit For
+            'End If
+        Next i
+
+        If comp_pick = 10 Then
+            comp_pick = Rand(1, 9)
+        End If
+
+        Do Until turnisover
+            If buttons(comp_pick - 1).Enabled = True Then
+                buttons(comp_pick - 1).Text = "O"
+                buttons(comp_pick - 1).Enabled = False
+                turnisover = True
+            Else
+                comp_pick = Rand(1, 9)
+            End If
+        Loop
+
+        'put it in the midddle or corner
+        'get two O's in a row
+        'win the game
+
+        Return comp_pick
+    End Function
+
+    Private Function EasyAI()
+        'This function is called when the game is in EasyAI mode. Computer picks a random number and returns this value if it is a valid spot.
+        Dim buttons As Button() = {btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9}
+        Dim TurnIsOver As Boolean = False
+
+        Do Until TurnIsOver
+            comp_pick = Rand(1, 9) 'picks a random number to be comp_pick
+            If buttons(comp_pick - 1).Enabled And (comp_pick <> 10) And (comp_pick <> 0) Then 'comp_pick is a valid pick
+                buttons(comp_pick - 1).Enabled = False 'disabled the button that the computer chose
+                TurnIsOver = True 'the turn is done
+            Else
+                comp_pick = Rand(1, 9) 'pick another random number
+            End If
+        Loop
+
+        Return comp_pick
+    End Function
+End Class

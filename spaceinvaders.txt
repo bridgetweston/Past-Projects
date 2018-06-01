@@ -1,0 +1,199 @@
+Public Class Form1
+    Dim aliens = New PictureBox() {alien0, alien1, alien2, alien3, alien4}
+    Dim xdir As Integer = -10
+    Dim direction As String = ""
+    Dim count As Integer
+    Dim shot As Boolean = False
+
+    'Bugs:
+    'displays infinite messageboxes when the game has been won or lost
+    'start screen works; but when start button is pressed in startscreen, 
+
+    Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        Call LocationGenerate() 'sets location of sprites
+        'Call StartScreen() 'runs the start screen first
+        lbl_title.Visible = False
+        btn_start.Visible = False
+        gameTimer.Start()
+    End Sub
+
+    Private Sub LocationGenerate()
+        'This sub sets starting coordinates of game objects
+        Dim aliens = New PictureBox() {alien0, alien1, alien2, alien3, alien4}
+
+        Dim n As Integer = Me.Width - (5 * alien0.Width)
+        Dim space As Double = n \ 6
+
+        For i = 0 To aliens.Length - 1
+            'aliens(i).Left = (space * i) + alien0.Width
+            Select Case i
+                Case Is > 0
+                    aliens(i).Left = aliens(i - 1).Left + 70
+            End Select
+        Next i
+
+    End Sub
+
+    Private Sub StartScreen()
+        Dim aliens = New PictureBox() {alien0, alien1, alien2, alien3, alien4}
+        startScreenTimer.Start() 'starts timer to run during the start screen only
+
+        'Make all game objects invisible:
+        For i = 0 To aliens.length - 1
+            aliens(i).Visible = False
+            ship.Visible = False
+        Next
+    End Sub
+
+    Private Sub startScreenTimer_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles startScreenTimer.Tick
+        count += 1
+
+        'make the title label blink
+        If count = 3 Then
+            If lbl_title.Visible = True Then
+                lbl_title.Visible = False
+            Else
+                lbl_title.Visible = True
+            End If
+            count = 0
+        End If
+    End Sub
+
+    Private Sub btn_start_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btn_start.Click
+        'This sub starts the actual game
+        Dim aliens = New PictureBox() {alien0, alien1, alien2, alien3, alien4}
+
+        For i = 0 To aliens.Length - 1
+            aliens(i).Visible = True 'make all aliens visible again
+            ship.Visible = True
+        Next
+
+        'hides startScreen objects
+        btn_start.Visible = False
+        lbl_title.Visible = False
+
+        startScreenTimer.Stop()
+        gameTimer.Start() 'starts the actual game timer, makes aliens start moving
+    End Sub
+
+    Private Sub gameTimer_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles gameTimer.Tick
+        Call MoveAliens()
+        Call CheckWinLose()
+        Call MoveBullet()
+        Call CheckCollision()
+    End Sub
+
+    Private Sub MoveAliens()
+        'This sub makes the aliens move around the screen automatically
+        Dim aliens = New PictureBox() {alien0, alien1, alien2, alien3, alien4}
+
+        'Make the aliens move (either right or left):
+        For i = 0 To aliens.Length - 1
+            If direction = "right" Then
+                'make aliens move to the right
+                aliens(i).Left += xdir * (-1)
+            Else
+                'make aliens move to the left
+                aliens(i).Left += xdir
+            End If
+        Next
+
+        'Change alien direction:
+        For i = 0 To aliens.Length - 1
+            If (aliens(i).Visible = True) And (aliens(i).Left < 0) Then
+                direction = "right" 'aliens are moving to the right
+                For a = 0 To aliens.Length - 1
+                    aliens(a).Top += 10 'move each alien down by 10
+                Next a
+                Exit For
+            ElseIf (aliens(i).Visible = True) And (aliens(i).Left + aliens(i).Width + 15) > Me.Width Then 'aliens have hit the right side
+                direction = "left" 'aliens are moving to the left
+                For a = 0 To aliens.Length - 1
+                    aliens(a).Top += 10 'move each alien down by 10
+                Next a
+                Exit For
+            End If
+        Next(i)
+    End Sub
+
+    Private Sub CheckWinLose()
+        'This sub checks if the user has won or lost the game. 2 cases: aliens get down too far; all aliens have been shot.
+        Dim count As Integer = 0
+        Dim aliens = New PictureBox() {alien0, alien1, alien2, alien3, alien4}
+        If aliens(2).Top > 400 Then 'checks a random alien's y-position
+            'the aliens have gotten too far down on the screen
+            MsgBox("You Lose!") 'replace this with new form
+            Me.Hide() 'closes the game screen
+            'show new form with win/lose message
+        End If
+
+        For i = 0 To aliens.Length - 1
+            If aliens(i).Visible = False Then
+                count += 1
+
+                If count = 5 Then
+                    count = 0
+                    MsgBox("You Wins")
+                    'gameTimer.Stop()
+                    Exit For
+                    Me.Hide()
+                End If
+                'Else
+                'Continue For
+            End If
+        Next
+    End Sub
+
+    Private Sub Form1_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles Me.KeyPress
+        'This sub handles the spacebar being pressed (not held down continuously). This represents the bullet being shot.
+        Select Case e.KeyChar
+            Case ChrW(32) 'the space key has been pressed
+                shot = True 'the bullet has been shot
+        End Select
+    End Sub
+
+    Private Sub Form1_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles Me.KeyDown
+        If shot = True Then 'move both ship and bullet
+            If e.KeyCode = Keys.Left Then
+                ship.Left -= 5
+            ElseIf e.KeyCode = Keys.Right Then
+                ship.Left += 5
+            End If
+        Else 'only move the ship
+            If e.KeyCode = Keys.Left Then
+                ship.Left -= 5
+                bullet.Left -= 5
+            ElseIf e.KeyCode = Keys.Right Then
+                ship.Left += 5
+                bullet.Left += 5
+            End If
+        End If
+    End Sub
+
+    Private Sub MoveBullet()
+        If shot = True Then 'checks if the bullet has been shot
+            bullet.Top -= 20  'moves the bullet upward
+
+            'checks if the bullet has reached the top of the screen
+            If bullet.Top < 0 Then
+                shot = False
+                'returns bullet to 'barrel'
+                bullet.Top = 393
+                bullet.Left = ship.Left + (ship.Width / 2)
+            End If
+        End If
+    End Sub
+
+    Private Sub CheckCollision()
+        Dim aliens = New PictureBox() {alien0, alien1, alien2, alien3, alien4}
+        For i = 0 To aliens.length - 1
+            If (aliens(i).Visible = True) And (aliens(i).Bounds.IntersectsWith(bullet.Bounds)) Then 'a (visible) alien has been shot
+                aliens(i).Visible = False 'makes alien invisible
+                'returns bullet to 'barrel'
+                bullet.Top = 393
+                bullet.Left = ship.Left + (ship.Width / 2)
+                shot = False
+            End If
+        Next
+    End Sub
+End Class

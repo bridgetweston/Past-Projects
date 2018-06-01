@@ -1,0 +1,351 @@
+Public Class BlackJack
+    Dim n, h As Integer
+    Dim img() As Image = {My.Resources._0, My.Resources._1, My.Resources._2, My.Resources._3, My.Resources._4, My.Resources._5, My.Resources._6, My.Resources._7, My.Resources._8, My.Resources._9, My.Resources._10, My.Resources._11, My.Resources._12, My.Resources._13, My.Resources._14, My.Resources._15, My.Resources._16, My.Resources._17, My.Resources._18, My.Resources._19, My.Resources._20, My.Resources._21, My.Resources._22, My.Resources._23, My.Resources._24, My.Resources._25, My.Resources._26, My.Resources._27, My.Resources._28, My.Resources._29, My.Resources._30, My.Resources._31, My.Resources._32, My.Resources._33, My.Resources._34, My.Resources._35, My.Resources._36, My.Resources._37, My.Resources._38, My.Resources._39, My.Resources._40, My.Resources._41, My.Resources._42, My.Resources._43, My.Resources._44, My.Resources._45, My.Resources._46, My.Resources._47, My.Resources._48, My.Resources._49, My.Resources._50, My.Resources._51, My.Resources._52}
+    Dim PlayersCardCount As Integer = 0 'player card count
+    Dim DealersCardCount As Integer = 0 'dealer card count
+    Dim playerPts As Integer = 0
+    Dim dealerPts As Integer = 0
+    Dim playedCardsCount As Integer = 0
+    Dim timerCounter As Integer = 0 'not using this I think
+    Dim gameOver As Boolean = False
+    Dim DResult, PResult As String
+
+    'arrays to hold current cards
+    Dim playerCards(11) As PictureBox 'the max amt cards you can have without being > 21 is 11
+    Dim dealerCards(11) As PictureBox
+    Dim playerAces As Integer = 0
+    Dim dealerAces As Integer = 0
+    Dim playedCards(22) As Integer 'this sub contains the indexes/card numbers of each card that is played so oe card is not played more than once
+
+    Private Sub btnHit_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnHit.Click
+        'When the user presses the "Hit" button, a new card will be displayed.
+        'This sub replaces a 'PlayerTurn' sub
+        NewPlayerCard() 'puts a new player card on the screen
+        CheckPlayerPts()
+    End Sub
+
+    Private Sub DealerTurn()
+        'Prevents user from taking turn when not supposed to
+        btnHit.Enabled = False
+        btnStand.Enabled = False
+
+        'NewDealerCard() 'adds a new card to the screen
+
+        DealerTurnTimer.Start()
+
+    End Sub
+
+    Private Sub FirstDeal()
+        'Deal cards to each player:
+        'Player
+        NewPlayerCard() 'deals first card to player
+        NewPlayerCard() 'deals second card to player
+        CheckPlayerPts()
+
+        'Dealer
+        'only deals one 'real' card, so only that card's value is added to the dealer's score
+        NewDealerCard()  'deals first card to dealer
+        'places a temporary card, there is no actual card here
+        pbxFacedownCard.Visible = True
+        pbxFacedownCard.BringToFront()
+
+        'The first deal is finished, player can now take their turn
+        btnHit.Enabled = True
+        btnStand.Enabled = True
+    End Sub
+
+    Private Sub NewDealerCard()
+        'This sub does everything to add a new dealer card to the screen.
+        btnHit.Enabled = False
+        btnStand.Enabled = False
+        pbxFacedownCard.Visible = False
+        Randomize()
+
+        'make sure card chosen hasn't already been dealt (n is not in playedCards array)
+        Do Until HasNotBeenPlayed(n) = True 'until it picks a card that has not been played
+            n = Rand(1, 51) 'picks a random card, it will pick 52 sometimes
+        Loop
+
+        AddDealerPts(n) 'add points to score and check score
+
+        MakeNewDealerCard(DealersCardCount, n) 'displays new card on left half of form
+
+        dealerCards(DealersCardCount).BringToFront() 'overlays the next card so it looks realistic
+
+        DealersCardCount += 1 'increases position counter
+        playedCardsCount += 1 'indicates that another card has been played
+    End Sub
+
+    Private Sub MakeNewDealerCard(ByVal DealersCardCount As Integer, ByVal h As Integer)
+        'This sub creates and displays a new card during run time
+        Dim newCard As New PictureBox
+        newCard.SizeMode = PictureBoxSizeMode.StretchImage
+        newCard.Visible = True
+        newCard.Top = 150
+        newCard.Height = 100
+        newCard.Width = 70
+        newCard.Image = img(h)
+        playedCards(playedCardsCount) = n 'adds the card to the array of played cards, array will be used to make sure same card isn't played twice
+        newCard.Left = (DealersCardCount + 1) * 20 + (Me.Width / 2) 'dealer's cards are displayed on right half of form
+        newCard.Name = "dealerCard" + DealersCardCount.ToString
+        dealerCards(DealersCardCount) = newCard
+        Controls.Add(newCard)
+    End Sub
+
+    Private Sub AddPlayerPts(ByVal x As Integer)
+        Dim ptsToAddP As Integer = FindVal(FindCardNum(x)) 'determines game point value of card picked
+        playerPts += ptsToAddP 'adds this card's value to the total # points
+
+        If ptsToAddP = 11 Then 'the card is an ace
+            playerAces += 1 'reps that another ace i in the hand
+        End If
+
+        CheckPlayerPts()
+
+        lblPlayerTotal.Text = playerPts 'displays new player total points
+    End Sub
+
+    Private Sub AddDealerPts(ByVal y As Integer)
+        'Increases Dealer points
+        Dim ptsToAddD As Integer = FindVal(FindCardNum(y)) 'Determines point value of card
+        dealerPts += ptsToAddD 'increases dealer's total pts
+
+        If ptsToAddD = 11 Then 'the card is an ace
+            dealerAces += 1 'reps that another ace i in the hand
+        End If
+
+
+        lblDealerTotal.Text = dealerPts
+    End Sub
+
+    Private Sub NewPlayerCard()
+        'This sub does everything to add a new player card to the screen.
+        Randomize()
+
+        'make sure card chosen hasn't already been dealt
+        Do Until HasNotBeenPlayed(n) = True
+            n = Rand(1, 51)
+        Loop
+
+        AddPlayerPts(n) 'add points to score and check score
+
+        MakeNewPlayerCard(PlayersCardCount, n) 'displays new card on left half of form
+
+        playerCards(PlayersCardCount).BringToFront()
+
+        PlayersCardCount += 1 'increases player's card position counter
+        playedCardsCount += 1 'indicates that another card has been played
+    End Sub
+
+    Private Sub NewRound()
+        'This sub resets the game/round
+        'empty all card arrays - DONE
+        'keep overall gamescore/money amts the same
+        'reset all global variables - DONE
+        'run all statements in form1.load - DONE
+        'delete all pictureboxes that have been created
+
+        'Note: Do NOT NOT NOT NOT NOT CHANGE THE ORDER OF THESE STATEMENTS!!!!!!!!!!!!!! OR ELSE
+
+        'Resets all variables to original values:
+        PlayersCardCount = 0 'player card count
+        DealersCardCount = 0 'dealer card count
+        playerPts = 0
+        dealerPts = 0
+        playedCardsCount = 0
+        gameOver = False
+
+        'Repeats all statements in Form1.Load, because this is sub is a stand-in for Load
+        btnHit.Enabled = False
+        btnStand.Enabled = False
+
+        pbxFacedownCard.Visible = False 'hides the 'cover card', the pbx that displays the front of a card
+
+        'Deletes each picturebox that has been created
+        For a = 0 To 10
+            Me.Controls.Remove(dealerCards(a))
+            Me.Controls.Remove(playerCards(a))
+        Next
+
+        'Resets objects remaining on form design to original values
+        'lblDealerTotal.Text = 0
+        'lblPlayerTotal.Text = 0
+        lblWhoWins.Text = ""
+
+
+        'Deletes elements in each array
+        Array.Clear(playerCards, 0, playerCards.Length)
+        Array.Clear(dealerCards, 0, dealerCards.Length)
+        Array.Clear(playedCards, 0, playedCards.Length)
+
+        'Changes StartReset label text- should be last statement to execute
+        btnStartReset.Text = "Start"
+    End Sub
+
+    Private Sub CheckPlayerPts()
+        'This sub monitors player's points to see what to do next
+
+        If playerPts > 21 And playerAces > 0 Then
+            playerPts -= 10
+            playerAces -= 1
+        End If
+
+
+        Select Case playerPts
+            Case Is > 21
+                PResult = "loses"
+                DResult = "wins"
+                'NewDealerCard() 'only flips over dealer's facedown card, bc dealer has already won
+                DealerTurn()
+                gameOver = True
+            Case 21
+                PResult = "gets BlackJack"
+                DealerTurn() 'commences regular dealerTurn(), dealer will try to get black Jack too
+        End Select
+    End Sub
+    Private Sub btnStand_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnStand.Click
+        'The player has ended their turn, commences regular dealerTurn()
+        'Dealer will try to get a higher score than the player
+        DealerTurn()
+    End Sub
+    Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        btnHit.Enabled = False
+        btnStand.Enabled = False
+        RunTimer.Start()
+    End Sub
+    Private Sub MakeNewPlayerCard(ByVal PlayersCardCount As Integer, ByVal n As Integer)
+        'This sub creates and displays a new card during run time
+        Dim newCard As New PictureBox
+        newCard.SizeMode = PictureBoxSizeMode.StretchImage
+        'newCard.BringToFront() 'this commantd doesn't work!!!!!!!!!!!!!!!!!!
+        newCard.Visible = True
+        newCard.Top = 150 'y-coordinate of pbx
+        newCard.Height = 100
+        newCard.Width = 70
+        newCard.Image = img(n)
+        playedCards(playedCardsCount) = n 'adds the card to the array of played cards, array will be used to make sure same card isn't played twice
+        newCard.Left = (PlayersCardCount + 1) * 20
+        newCard.Name = "playerCard" + PlayersCardCount.ToString
+        playerCards(PlayersCardCount) = newCard
+        Controls.Add(newCard)
+    End Sub
+    Private Function FindCardNum(ByVal num As Integer)
+        'This function finds face value of card (eg Jack is 11, King is 13, 2 is 2)
+        If (num > 13 And num < 27) Then
+            Return num - 13
+        ElseIf (num > 26 And num < 40) Then
+            Return num - 26
+        ElseIf (num > 39 And num < 53) Then
+            Return num - 39
+        Else
+            Return num
+        End If
+    End Function
+    Private Function FindVal(ByVal k As Integer)
+        'This function finds the integer value of a given card specific to the game Black Jack
+        'Face cards = 10 pts
+        'Number cards = face value
+        'Aces = 1 or 11
+
+        Select Case k
+            Case 1 'the card is an ace
+                Return 11 'returns 11, ambiguity will be accounted for later
+            Case Is > 10
+                Return 10 'it is a face card
+        End Select
+        Return k
+    End Function
+    Private Sub btnStartReset_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnStartReset.Click
+        If btnStartReset.Text = "Start" Then
+            FirstDeal()
+            btnStartReset.Text = "Reset"
+        ElseIf btnStartReset.Text = "Reset" Then
+            'Player wants to restart/reset the game
+            Call NewRound()
+        End If
+        'Player's turn has started
+    End Sub
+    Private Function Rand(ByVal lowNum As Integer, ByVal highNum As Integer)
+        Return (highNum - lowNum + 1) * Rnd() + lowNum
+    End Function
+    Private Function HasNotBeenPlayed(ByVal NextIndex As Integer)
+        'This function determines if a parameter is contained in playedCards array. In other words, has the card chosen been played already?
+        For i = 0 To playedCards.Length - 1
+            If NextIndex = playedCards(i) Then
+                Return False
+            End If
+        Next
+        Return True
+    End Function
+
+    Private Function CheckDealerPts()
+        If dealerPts > 21 And dealerAces > 0 Then
+            dealerPts -= 10
+            dealerAces -= 1
+        End If
+
+        If playerPts > 21 Then
+            gameOver = True
+            Return True
+        End If
+        gameOver = False
+        Select Case dealerPts
+            Case playerPts
+                DResult = "ties"
+                PResult = "ties"
+                gameOver = True
+            Case 21
+                'dealer gets blackjack
+                DResult = "gets BlackJack"
+                gameOver = True
+            Case Is > 21
+                'dealer loses
+                DResult = "loses"
+                If PResult <> "gets BlackJack" Then
+                    PResult = "wins"
+                End If
+                gameOver = True
+            Case Is > playerPts
+                'dealerPts is automatically <=21, bc of condition ^^
+                'dealer wins
+                DResult = "wins"
+                PResult = "loses"
+                gameOver = True
+            Case Is >= 17
+                'automatically, playerpts , 21 because this condition is taken care of previously
+                'compare scores:
+                If dealerPts > playerPts Then
+                    DResult = "wins"
+                    PResult = "loses"
+                ElseIf dealerPts > playerPts And playerPts < 21 Then
+                    DResult = "loses"
+                    PResult = "wins"
+                End If
+                gameOver = True
+        End Select
+        Return gameOver
+    End Function
+
+    Private Sub Timer1_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles DealerTurnTimer.Tick
+        NewDealerCard()
+        If CheckDealerPts() = True Then 'gameover=true
+            DealerTurnTimer.Stop()
+        End If
+    End Sub
+
+    Private Sub RunTimer_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles RunTimer.Tick
+        btnStartReset.Left = Me.Width / 2 - btnStartReset.Width / 2
+        lblPlayerTotal.Left = 30
+        lblPlayerTotal.Top = 80
+
+        lblPlayerTotal.Text = playerPts
+        lblDealerTotal.Text = dealerPts
+
+        lblDealerTotal.Left = Me.Width / 2 + 30
+        lblDealerTotal.Top = 80
+        If gameOver Then
+            lblWhoWins.Text = "Dealer " & DResult & ", Player " & PResult
+            lblWhoWins.Left = Me.Width / 2 - lblWhoWins.Width / 2
+        End If
+    End Sub
+End Class
